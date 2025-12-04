@@ -1,79 +1,138 @@
 import 'dart:io';
 
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+import 'package:mime/mime.dart';
 
-import '../config/api_config.dart';
 import '../models/hairstyle_preference.dart';
 
 class GeminiService {
-  late final GenerativeModel _imagenModel;
+  late final FirebaseAI _firebaseAI;
+  late final ImagenModel _imagenModel;
 
   GeminiService() {
-    final apiKey = ApiConfig.geminiApiKey;
-    if (apiKey.isEmpty) {
-      print('Warning: GEMINI_API_KEY is not set');
-    }
+    // Initialize Firebase AI for Imagen
+    _firebaseAI = FirebaseAI.vertexAI(location: 'us-central1');
 
-    // Initialize Imagen model
-    // Note: Verify the model name for Imagen in the specific API version you are using.
-    // As per instruction, using 'imagen-3.0-generate-002' or similar.
-    _imagenModel = GenerativeModel(
-      model: 'imagen-3.0-generate-002',
-      apiKey: apiKey,
+    // Initialize the Vertex AI Gemini API backend service
+    // Create a `GenerativeModel` instance with a model that supports your use case
+    _imagenModel = FirebaseAI.vertexAI().imagenModel(
+      model: 'imagen-3.0-capability-001',
+      generationConfig: ImagenGenerationConfig(
+        addWatermark: true,
+        numberOfImages: 3,
+      ),
+      safetySettings: ImagenSafetySettings(
+        ImagenSafetyFilterLevel.blockOnlyHigh,
+        ImagenPersonFilterLevel.allowAll,
+      ),
     );
   }
 
-  Future<List<String>> generateHairstyleRecommendations({
+  String? getMimeType(File file) {
+    return lookupMimeType(file.path);
+  }
+
+  Future<List<ImagenInlineImage>> generateHairstyleRecommendations({
     required File frontPhoto,
     required File sidePhoto,
     File? fullBodyPhoto,
     required HairstylePreference preferences,
   }) async {
-    // This is a placeholder for the actual implementation.
-    // Real implementation would involve uploading images or sending them as bytes
-    // along with a prompt to the model.
-    //
-    // Since 'google_generative_ai' package primarily supports Gemini text/multimodal models,
-    // and Imagen might require a different endpoint or specific usage within the package (if supported)
-    // or REST API calls if the package doesn't fully cover Imagen yet.
-    //
-    // For this skeleton, we will simulate a delay and return mock URLs or handle it if the package supports it.
+    try {
+      // Read image files as bytes
+      final frontBytes = await frontPhoto.readAsBytes();
+      final sideBytes = await sidePhoto.readAsBytes();
 
-    // Constructing a prompt based on preferences
-    final prompt = _buildPrompt(preferences);
-    print('Generating with prompt: $prompt');
+      final frontSubjectReference = ImagenSubjectReference(
+        image: ImagenInlineImage(
+            bytesBase64Encoded: frontBytes,
+            mimeType: lookupMimeType(frontPhoto.path) ?? 'image/jpeg'),
+        referenceId: 1,
+        description: 'Front photo of a person',
+        subjectType: ImagenSubjectReferenceType.person,
+      );
+      final sideSubjectReference = ImagenSubjectReference(
+        image: ImagenInlineImage(
+            bytesBase64Encoded: sideBytes,
+            mimeType: lookupMimeType(sidePhoto.path) ?? 'image/jpeg'),
+        referenceId: 2,
+        description: 'Side photo of a person',
+        subjectType: ImagenSubjectReferenceType.person,
+      );
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 3));
+      final imageParts = [frontSubjectReference, sideSubjectReference];
 
-    // TODO: FULLY GENERATE
-    // Return mock data for UI development until API is fully integrated
-    return [
-      'https://placeholder.com/1',
-      'https://placeholder.com/2',
-      'https://placeholder.com/3'
-    ];
+      // Add full body photo if available
+      if (fullBodyPhoto != null) {
+        final fullBodyBytes = await fullBodyPhoto.readAsBytes();
+        final fullBodySubjectReference = ImagenSubjectReference(
+          image: ImagenInlineImage(
+              bytesBase64Encoded: fullBodyBytes,
+              mimeType: lookupMimeType(fullBodyPhoto.path) ?? 'image/jpeg'),
+          referenceId: 2,
+          description: 'Full body photo of a person',
+          subjectType: ImagenSubjectReferenceType.person,
+        );
+        imageParts.add(fullBodySubjectReference);
+      }
+
+      // Build prompt for hairstyle analysis and recommendations
+      final prompt = _buildAnalysisPrompt(preferences);
+
+      // Generate content using Gemini API
+      final response = await _imagenModel.editImage(
+        imageParts,
+        prompt,
+        config: ImagenEditingConfig(
+          editSteps:
+              5, // Number of editing steps, a higher value can improve quality
+        ),
+      );
+
+      if (response.images.isEmpty) {
+        throw Exception('No response!');
+      }
+
+      return response.images;
+    } catch (e) {
+      throw Exception('Failed to generate hairstyle recommendations: $e');
+    }
   }
 
-  String _buildPrompt(HairstylePreference prefs) {
+  String _buildAnalysisPrompt(HairstylePreference prefs) {
     StringBuffer sb = StringBuffer();
-    sb.write(
-        "Generate a photorealistic image of a person with the following hairstyle: ");
+    sb.write("Please edit photos of this person"
+        ", based on images that this person supplied, see"
+        " [1] and [2] and apply 3 different hairstyle recommendations "
+        "based on the person's face shape, features, and the following preferences:\n\n");
+
     if (prefs.length != null) {
-      sb.write("${prefs.length.toString().split('.').last} length. ");
+      sb.write(
+          "Preferred length: ${prefs.length.toString().split('.').last}\n");
     }
     if (prefs.selectedStyles.isNotEmpty) {
       sb.write(
-          "Style elements: ${prefs.selectedStyles.map((e) => e.toString().split('.').last).join(', ')}. ");
+          "Style elements: ${prefs.selectedStyles.map((e) => e.toString().split('.').last).join(', ')}\n");
     }
     if (prefs.additionalPreferences.isNotEmpty) {
-      sb.write("Vibe: ${prefs.additionalPreferences.join(', ')}. ");
+      sb.write(
+          "Additional preferences: ${prefs.additionalPreferences.join(', ')}\n");
     }
     if (prefs.customRequest != null && prefs.customRequest!.isNotEmpty) {
-      sb.write("Additional details: ${prefs.customRequest}. ");
+      sb.write("Custom requests: ${prefs.customRequest}\n");
     }
+
     sb.write(
-        "The image should maintain the facial features of the uploaded photos.");
+        "\nGenerate 3 variations showing the person with different hairstyles that:\n");
+    sb.write("1. Complement their face shape and features\n");
+    sb.write("2. Match the specified preferences\n");
+    sb.write("3. Look natural and realistic\n");
+    sb.write("4. Maintain the person's identity and facial features\n\n");
+    sb.write(
+        "5. Should always be front facing, avoid side facing generated image\n\n");
+    sb.write(
+        "Make subtle, realistic edits that show how each hairstyle would look on this specific person.");
+
     return sb.toString();
   }
 }

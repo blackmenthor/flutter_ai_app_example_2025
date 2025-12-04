@@ -1,8 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:firebase_ai/firebase_ai.dart';
 import 'package:gal/gal.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 class ImageService {
@@ -27,7 +26,7 @@ class ImageService {
     }
   }
 
-  Future<bool> saveImageToGallery(String pathOrUrl) async {
+  Future<bool> saveImageToGallery(ImagenInlineImage pathOrUrl) async {
     try {
       // Check/Request permission using Gal
       // Gal handles the platform specific permissions (like add-only on iOS 14+)
@@ -36,23 +35,11 @@ class ImageService {
         if (!granted) return false;
       }
 
-      if (pathOrUrl.startsWith('http')) {
-        // Download image
-        final response = await http.get(Uri.parse(pathOrUrl));
-        if (response.statusCode == 200) {
-          await Gal.putImageBytes(
-            Uint8List.fromList(response.bodyBytes),
-            name: "hair_ai_${DateTime.now().millisecondsSinceEpoch}",
-          );
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        // Local file
-        await Gal.putImage(pathOrUrl);
-        return true;
-      }
+      await Gal.putImageBytes(
+        pathOrUrl.bytesBase64Encoded,
+        name: "hair_ai_${DateTime.now().millisecondsSinceEpoch}",
+      );
+      return true;
     } catch (e) {
       print('Error saving image: $e');
       return false;

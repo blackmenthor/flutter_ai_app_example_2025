@@ -1,10 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+
 import 'completion_screen.dart';
 
 class RecommendationsScreen extends StatefulWidget {
-  final List<String> imageUrls;
+  final List<ImagenInlineImage> imageUrls;
 
   const RecommendationsScreen({super.key, required this.imageUrls});
 
@@ -45,13 +46,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                           child: ClipRRect(
                             borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(16)),
-                            child: CachedNetworkImage(
-                              imageUrl: widget.imageUrls[index],
+                            child: Image.memory(
+                              widget.imageUrls[index].bytesBase64Encoded,
                               fit: BoxFit.cover,
-                              placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator()),
-                              errorWidget: (context, url, error) =>
-                                  const Center(child: Icon(Icons.error)),
                             ),
                           ),
                         ),

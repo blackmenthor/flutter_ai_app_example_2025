@@ -27,8 +27,9 @@ class HairstylePreference {
 
   HairstylePreference({
     this.length,
-    this.selectedStyles = const [],
-    this.additionalPreferences = const [],
+    List<StyleType>? selectedStyles,
+    List<String>? additionalPreferences,
     this.customRequest,
-  });
+  }) : selectedStyles = selectedStyles ?? [],
+       additionalPreferences = additionalPreferences ?? [];
 }

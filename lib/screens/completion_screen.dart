@@ -1,11 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/material.dart';
 
 import '../services/image_service.dart';
 import '../services/permission_service.dart';
 
 class CompletionScreen extends StatelessWidget {
-  final String selectedImageUrl;
+  final ImagenInlineImage selectedImageUrl;
   final ImageService _imageService = ImageService();
   final PermissionService _permissionService = PermissionService();
 
@@ -58,8 +58,8 @@ class CompletionScreen extends StatelessWidget {
             const SizedBox(height: 32),
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: CachedNetworkImage(
-                imageUrl: selectedImageUrl,
+              child: Image.memory(
+                selectedImageUrl.bytesBase64Encoded,
                 height: 300,
                 width: double.infinity,
                 fit: BoxFit.cover,
