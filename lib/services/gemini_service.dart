@@ -19,7 +19,7 @@ class GeminiService {
       model: 'imagen-3.0-capability-001',
       generationConfig: ImagenGenerationConfig(
         addWatermark: true,
-        numberOfImages: 3,
+        numberOfImages: 8,
       ),
       safetySettings: ImagenSafetySettings(
         ImagenSafetyFilterLevel.blockOnlyHigh,
@@ -35,7 +35,6 @@ class GeminiService {
   Future<List<ImagenInlineImage>> generateHairstyleRecommendations({
     required File frontPhoto,
     required File sidePhoto,
-    File? fullBodyPhoto,
     required HairstylePreference preferences,
   }) async {
     try {
@@ -48,7 +47,7 @@ class GeminiService {
             bytesBase64Encoded: frontBytes,
             mimeType: lookupMimeType(frontPhoto.path) ?? 'image/jpeg'),
         referenceId: 1,
-        description: 'Front photo of a person',
+        description: 'Front photo of a person from the front of the face',
         subjectType: ImagenSubjectReferenceType.person,
       );
       final sideSubjectReference = ImagenSubjectReference(
@@ -56,25 +55,11 @@ class GeminiService {
             bytesBase64Encoded: sideBytes,
             mimeType: lookupMimeType(sidePhoto.path) ?? 'image/jpeg'),
         referenceId: 2,
-        description: 'Side photo of a person',
+        description: 'Side photo of a person from the side of the face',
         subjectType: ImagenSubjectReferenceType.person,
       );
 
       final imageParts = [frontSubjectReference, sideSubjectReference];
-
-      // Add full body photo if available
-      if (fullBodyPhoto != null) {
-        final fullBodyBytes = await fullBodyPhoto.readAsBytes();
-        final fullBodySubjectReference = ImagenSubjectReference(
-          image: ImagenInlineImage(
-              bytesBase64Encoded: fullBodyBytes,
-              mimeType: lookupMimeType(fullBodyPhoto.path) ?? 'image/jpeg'),
-          referenceId: 2,
-          description: 'Full body photo of a person',
-          subjectType: ImagenSubjectReferenceType.person,
-        );
-        imageParts.add(fullBodySubjectReference);
-      }
 
       // Build prompt for hairstyle analysis and recommendations
       final prompt = _buildAnalysisPrompt(preferences);
@@ -85,7 +70,7 @@ class GeminiService {
         prompt,
         config: ImagenEditingConfig(
           editSteps:
-              5, // Number of editing steps, a higher value can improve quality
+              1, // Number of editing steps, a higher value can improve quality
         ),
       );
 
@@ -101,9 +86,8 @@ class GeminiService {
 
   String _buildAnalysisPrompt(HairstylePreference prefs) {
     StringBuffer sb = StringBuffer();
-    sb.write("Please edit photos of this person"
-        ", based on images that this person supplied, see"
-        " [1] and [2] and apply 3 different hairstyle recommendations "
+    sb.write(
+        "Edit the photos of this person ([1] and [2]) to apply a new hairstyle recommendation "
         "based on the person's face shape, features, and the following preferences:\n\n");
 
     if (prefs.length != null) {
@@ -122,16 +106,16 @@ class GeminiService {
       sb.write("Custom requests: ${prefs.customRequest}\n");
     }
 
+    sb.write("\nGenerate a hairstyle that:\n");
+    sb.write("- Complements their face shape and features\n");
+    sb.write("- Matches the specified preferences\n");
+    sb.write("- Looks natural and realistic\n");
+    sb.write("- Maintains the person's identity and facial features\n");
+    sb.write("- Shows the person from a clear front view\n\n");
     sb.write(
-        "\nGenerate 3 variations showing the person with different hairstyles that:\n");
-    sb.write("1. Complement their face shape and features\n");
-    sb.write("2. Match the specified preferences\n");
-    sb.write("3. Look natural and realistic\n");
-    sb.write("4. Maintain the person's identity and facial features\n\n");
+        "Make subtle, realistic edits that show how this hairstyle would look on this specific person.");
     sb.write(
-        "5. Should always be front facing, avoid side facing generated image\n\n");
-    sb.write(
-        "Make subtle, realistic edits that show how each hairstyle would look on this specific person.");
+        "Please refrain from editing the face of this person, so the face should 100% always looks the same.");
 
     return sb.toString();
   }

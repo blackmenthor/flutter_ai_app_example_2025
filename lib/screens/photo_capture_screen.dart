@@ -20,7 +20,6 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
 
   File? _frontPhoto;
   File? _sidePhoto;
-  File? _fullBodyPhoto;
 
   bool get _canProceed => _frontPhoto != null && _sidePhoto != null;
 
@@ -47,7 +46,6 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
           _frontPhoto = image;
         else if (type == 'side')
           _sidePhoto = image;
-        else if (type == 'body') _fullBodyPhoto = image;
       });
     }
   }
@@ -90,14 +88,13 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'We need a few photos to analyze your face shape and features.',
+              'We need two photos to analyze your face shape and features.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 24),
             _buildPhotoSection('Front Face (Required)', 'front', _frontPhoto),
             _buildPhotoSection('Side Face (Required)', 'side', _sidePhoto),
-            _buildPhotoSection('Full Body (Optional)', 'body', _fullBodyPhoto),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _canProceed
@@ -108,7 +105,6 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
                           builder: (context) => PreferenceScreen(
                             frontPhoto: _frontPhoto!,
                             sidePhoto: _sidePhoto!,
-                            fullBodyPhoto: _fullBodyPhoto,
                           ),
                         ),
                       );

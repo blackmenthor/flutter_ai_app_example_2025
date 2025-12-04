@@ -38,7 +38,7 @@ class InstructionsScreen extends StatelessWidget {
               context,
               icon: Icons.auto_awesome,
               title: 'Step 3: Get Recommendations',
-              description: 'Our AI generates hairstyles tailored to you.',
+              description: 'Our AI generates 4 different hairstyles tailored to you.',
             ),
             _buildInstructionStep(
               context,

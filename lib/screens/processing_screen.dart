@@ -8,14 +8,12 @@ import 'recommendations_screen.dart';
 class ProcessingScreen extends StatefulWidget {
   final File frontPhoto;
   final File sidePhoto;
-  final File? fullBodyPhoto;
   final HairstylePreference preferences;
 
   const ProcessingScreen({
     super.key,
     required this.frontPhoto,
     required this.sidePhoto,
-    this.fullBodyPhoto,
     required this.preferences,
   });
 
@@ -37,7 +35,6 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
       final imageUrls = await _geminiService.generateHairstyleRecommendations(
         frontPhoto: widget.frontPhoto,
         sidePhoto: widget.sidePhoto,
-        fullBodyPhoto: widget.fullBodyPhoto,
         preferences: widget.preferences,
       );
 

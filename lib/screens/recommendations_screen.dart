@@ -114,4 +114,5 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       ),
     );
   }
+
 }
