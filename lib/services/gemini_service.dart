@@ -112,10 +112,17 @@ class GeminiService {
     sb.write("- Looks natural and realistic\n");
     sb.write("- Maintains the person's identity and facial features\n");
     sb.write("- Shows the person from a clear front view\n\n");
-    sb.write(
-        "Make subtle, realistic edits that show how this hairstyle would look on this specific person.");
-    sb.write(
-        "Please refrain from editing the face of this person, so the face should 100% always looks the same.");
+    
+    sb.write("IMPORTANT CONSTRAINTS:\n");
+    sb.write("- ONLY modify the hair/hairstyle - keep everything else identical to the reference photos\n");
+    sb.write("- Preserve the EXACT same face, facial features, skin tone, and facial expression\n");
+    sb.write("- Keep the EXACT same clothing, accessories, and background as shown in the reference images\n");
+    sb.write("- Maintain the EXACT same camera angle, lighting, and photo composition\n");
+    sb.write("- Do NOT change body posture, head position, or any aspect except the hair\n");
+    sb.write("- The result should look like the same photo with only a different hairstyle\n\n");
+    
+    sb.write("Make subtle, realistic hair edits that show how this hairstyle would look on this specific person ");
+    sb.write("while keeping everything else completely unchanged from the original reference images.");
 
     return sb.toString();
   }
